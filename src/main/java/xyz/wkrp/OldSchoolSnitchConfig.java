@@ -1,4 +1,4 @@
-package com.wkrp;
+package xyz.wkrp;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -17,7 +17,12 @@ public interface OldSchoolSnitchConfig extends Config {
     }
 
     @ConfigItem(keyName = "enableKillTracking", name = "Enable Kill Tracking", description = "Send NPC Kills to Old School Snitch")
-    default boolean killrackingCheckbox() {
+    default boolean killTrackingCheckbox() {
+        return false;
+    }
+
+    @ConfigItem(keyName = "enableDebugMessages", name = "Enable Debug Log Messages", description = "Enable Debug Log Messages")
+    default boolean debugMessagesCheckbox() {
         return false;
     }
 }

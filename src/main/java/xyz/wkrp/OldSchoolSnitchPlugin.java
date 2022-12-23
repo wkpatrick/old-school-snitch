@@ -1,16 +1,16 @@
-package com.wkrp;
+package xyz.wkrp;
 
 import com.google.inject.Provides;
 
 import javax.inject.Inject;
 
-import com.wkrp.records.NpcKill;
-import com.wkrp.records.XpDrop;
+import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.PlayerChanged;
+import xyz.wkrp.records.NameSignIn;
+import xyz.wkrp.records.NpcKill;
+import xyz.wkrp.records.XpDrop;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
-import net.runelite.api.Skill;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
@@ -41,11 +41,22 @@ public class OldSchoolSnitchPlugin extends Plugin {
     private OldSchoolSnitchConfig config;
     private final Map<Skill, Integer> previousSkillExpTable = new EnumMap<>(Skill.class);
 
+    private boolean NameSnatched = false;
+
 
     @Override
     protected void startUp() throws Exception {
         log.info("Old School Snitch started!");
     }
+
+    @Subscribe
+    public void onPlayerChanged(PlayerChanged playerChanged){
+        if(!NameSnatched && playerChanged.getPlayer().getId() == client.getLocalPlayer().getId()){
+            log.info("Player id match! " + client.getLocalPlayer().getName());
+            snitchClient.SignIn(new NameSignIn(client.getLocalPlayer().getName(), config.apiKey()));
+        }
+    }
+
 
     @Override
     protected void shutDown() throws Exception {
@@ -64,20 +75,24 @@ public class OldSchoolSnitchPlugin extends Plugin {
             if (previous != null) {
                 int delta = xp - previous;
                 if (delta > 0) {
-                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", delta + "XP acquired in " + skill.name(), null);
-                    snitchClient.sendXP(new XpDrop(skill.name(), delta, UUID.fromString(config.apiKey())));
+                    if (config.debugMessagesCheckbox()) {
+                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", delta + "XP acquired in " + skill.name(), null);
+                    }
+
+                    snitchClient.sendXP(new XpDrop(skill.name(), delta, xp, UUID.fromString(config.apiKey())));
                 }
             }
         }
-
     }
 
     @Subscribe
     public void onNpcLootReceived(final NpcLootReceived npcLootReceived) {
-        if (config.killrackingCheckbox()) {
+        if (config.killTrackingCheckbox()) {
             final NPC npc = npcLootReceived.getNpc();
+            if (config.debugMessagesCheckbox()) {
+                client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", npc.getName() + " Killed", null);
+            }
 
-            client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", npc.getName() + "Killed", null);
             snitchClient.sendKill(new NpcKill(npc.getId(), UUID.fromString(config.apiKey())));
         }
 

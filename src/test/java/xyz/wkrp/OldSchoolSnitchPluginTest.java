@@ -1,4 +1,4 @@
-package com.wkrp;
+package xyz.wkrp;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;

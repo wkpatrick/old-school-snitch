@@ -1,10 +1,11 @@
-package com.wkrp;
+package xyz.wkrp;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.wkrp.records.NpcKill;
-import com.wkrp.records.XpDrop;
+import xyz.wkrp.records.NameSignIn;
+import xyz.wkrp.records.NpcKill;
+import xyz.wkrp.records.XpDrop;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -25,6 +26,20 @@ public class OldSchoolSnitchClient {
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     }
 
+    public void SignIn(NameSignIn name){
+        RequestBody body = RequestBody.create(JSON, gson.toJson(name));
+        String baseURL = "http://localhost:4000";
+        Request request = new Request.Builder()
+                .url(baseURL + "/api/name")
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void sendXP(XpDrop xpDrop){
         RequestBody body = RequestBody.create(JSON, gson.toJson(xpDrop));
         String baseURL = "http://localhost:4000";
@@ -34,7 +49,6 @@ public class OldSchoolSnitchClient {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            log.info("Response: " + response.body());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

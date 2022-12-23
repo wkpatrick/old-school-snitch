@@ -1,4 +1,4 @@
-package com.wkrp.records;
+package xyz.wkrp.records;
 
 import java.util.UUID;
 
