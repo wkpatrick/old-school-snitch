@@ -3,6 +3,7 @@ package xyz.wkrp;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import xyz.wkrp.records.ItemDrop;
 import xyz.wkrp.records.NameSignIn;
 import xyz.wkrp.records.NpcKill;
 import xyz.wkrp.records.XpDrop;
@@ -59,6 +60,21 @@ public class OldSchoolSnitchClient {
         String baseURL = "http://localhost:4000";
         Request request = new Request.Builder()
                 .url(baseURL + "/api/kill")
+                .post(body)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            log.info("Response: " + response.body());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendItem(ItemDrop itemDrop) {
+        RequestBody body = RequestBody.create(JSON, gson.toJson(itemDrop));
+        String baseURL = "http://localhost:4000";
+        Request request = new Request.Builder()
+                .url(baseURL + "/api/item")
                 .post(body)
                 .build();
 

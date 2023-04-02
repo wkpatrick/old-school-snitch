@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id "com.github.johnrengelman.shadow" version "6.1.0"
 }
 
 repositories {
@@ -23,10 +24,19 @@ dependencies {
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
+shadowJar {
+	from sourceSets.test.output
+	configurations = [project.configurations.testRuntimeClasspath]
+	manifest {
+		attributes "Main-Class": "xyz.wkrp.OldSchoolSnitchPluginTest"
+	}
+}
+
 group = 'com.example'
 version = '1.0-SNAPSHOT'
-sourceCompatibility = '1.8'
+sourceCompatibility = "17"
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 }
+targetCompatibility = JavaVersion.VERSION_17

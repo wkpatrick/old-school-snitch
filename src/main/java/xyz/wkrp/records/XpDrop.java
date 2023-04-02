@@ -1,7 +1,5 @@
 package xyz.wkrp.records;
 
-import java.util.UUID;
-
-public record XpDrop(String Skill, Integer Amount, Integer CurrentTotal, UUID PlayerId) {
+public record XpDrop(String Skill, Integer Amount, Integer CurrentTotal, String PlayerId) {
 }
 

@@ -1,7 +1,5 @@
 package xyz.wkrp.records;
 
-import java.util.UUID;
-
-public record NpcKill(int NpcId, UUID PlayerId) {
+public record NpcKill(int NpcId, String PlayerId) {
 
 }
