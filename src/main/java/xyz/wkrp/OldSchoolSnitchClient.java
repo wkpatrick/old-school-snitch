@@ -64,7 +64,6 @@ public class OldSchoolSnitchClient {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            log.info("Response: " + response.body());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -79,7 +78,6 @@ public class OldSchoolSnitchClient {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            log.info("Response: " + response.body());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
