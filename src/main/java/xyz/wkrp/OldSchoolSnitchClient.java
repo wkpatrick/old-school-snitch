@@ -18,69 +18,69 @@ public class OldSchoolSnitchClient {
     private final OkHttpClient client;
     private final Gson gson;
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private final String baseUrl = "http://localhost:4000";
 
     @Inject
-    private OldSchoolSnitchClient(OkHttpClient client)
-    {
+    private OldSchoolSnitchClient(OkHttpClient client) {
         this.client = client;
         this.gson = new GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     }
 
-    public void SignIn(NameSignIn name){
+    public void SignIn(NameSignIn name) {
         RequestBody body = RequestBody.create(JSON, gson.toJson(name));
-        String baseURL = "http://localhost:4000";
         Request request = new Request.Builder()
-                .url(baseURL + "/api/name")
+                .url(baseUrl + "/api/name")
                 .post(body)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        makeRequest(request);
     }
 
-    public void sendXP(XpDrop xpDrop){
+    public void sendXP(XpDrop xpDrop) {
         RequestBody body = RequestBody.create(JSON, gson.toJson(xpDrop));
-        String baseURL = "http://localhost:4000";
         Request request = new Request.Builder()
-                .url(baseURL + "/api/xp")
+                .url(baseUrl + "/api/xp")
                 .post(body)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        makeRequest(request);
     }
 
     public void sendKill(NpcKill kill) {
         RequestBody body = RequestBody.create(JSON, gson.toJson(kill));
-        String baseURL = "http://localhost:4000";
         Request request = new Request.Builder()
-                .url(baseURL + "/api/kill")
+                .url(baseUrl + "/api/kill")
                 .post(body)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        makeRequest(request);
     }
 
     public void sendItem(ItemDrop itemDrop) {
         RequestBody body = RequestBody.create(JSON, gson.toJson(itemDrop));
-        String baseURL = "http://localhost:4000";
         Request request = new Request.Builder()
-                .url(baseURL + "/api/item")
+                .url(baseUrl + "/api/item")
                 .post(body)
                 .build();
+        makeRequest(request);
+    }
 
-        try (Response response = client.newCall(request).execute()) {
-        } catch (IOException e) {
+    private final Callback callback = new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+            log.error("Error in OldSchoolSnitchClient", e);
             throw new RuntimeException(e);
         }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            response.close();
+        }
+    };
+
+    public void makeRequest(Request request) {
+        client.newCall(request).enqueue(callback);
     }
 
 }

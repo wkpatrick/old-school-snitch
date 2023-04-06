@@ -108,14 +108,14 @@ public class OldSchoolSnitchPlugin extends Plugin {
         ItemContainer container = event.getItemContainer();
 
         if (containerChangedCount < 1 && container == client.getItemContainer(InventoryID.INVENTORY)) {
-            log.info("Setting baseline snapshot");
+            log.debug("Setting baseline snapshot");
             previousInventorySnapshot = getInventorySnapshot();
-            log.info("Inventory count: " + previousInventorySnapshot.elementSet().size());
+            log.debug("Inventory count: " + previousInventorySnapshot.elementSet().size());
 
         }
         else if(containerChangedCount > 1 && container == client.getItemContainer(InventoryID.INVENTORY)){
-            log.info("Inventory changed!");
-            log.info("Pending requested updates: " + pendingInventoryUpdates);
+            log.debug("Inventory changed!");
+            log.debug("Pending requested updates: " + pendingInventoryUpdates);
             if(pendingInventoryUpdates > 0){
                 Multiset<Integer> currentInventorySnapshot = getInventorySnapshot();
                 final Multiset<Integer> itemsReceived = Multisets.difference(currentInventorySnapshot, previousInventorySnapshot);
@@ -123,7 +123,7 @@ public class OldSchoolSnitchPlugin extends Plugin {
                 previousInventorySnapshot = currentInventorySnapshot;
                 if (containerChangedCount > 1) {
                     var set = itemsReceived.elementSet();
-                    log.info("Items delta: " + set.size());
+                    log.debug("Items delta: " + set.size());
                     for (var itemId : set) {
                         var count = itemsReceived.count(itemId);
                         client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", ("Got " + count + " of " + itemId), null);
@@ -132,7 +132,8 @@ public class OldSchoolSnitchPlugin extends Plugin {
                 }
                 pendingInventoryUpdates--;
             } else if(pendingInventoryUpdates == 0){
-                log.info("non-skilling inv update, no need to grab");
+                //Still need to update the inventory snapshot on say dropping items, getting non-skilling ones, etc.
+                previousInventorySnapshot = getInventorySnapshot();
             } else {
                 log.error("Somehow managed to get pendingInvUpdates < 0. This is a problem");
             }
@@ -148,40 +149,15 @@ public class OldSchoolSnitchPlugin extends Plugin {
             return;
         } else if (WOOD_CUT_PATTERN.matcher(message).matches()) {
             //Got some wood
-            var itemId = matchWood(message);
-            client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", ("Got wood " + itemId), null);
-            snitchClient.sendItem(new ItemDrop(itemId, 1, config.apiKey()));
+            pendingInventoryUpdates++;
 
         } else if (MINING_PATTERN.matcher(event.getMessage()).matches()) {
             //Got some ore bb
+            pendingInventoryUpdates++;
         } else if (message.contains("You catch a") || message.contains("You catch some") ||
                 message.equals("Your cormorant returns with its catch.")) {
             pendingInventoryUpdates++;
 
-        }
-    }
-
-    private int matchWood(String woodMsg) {
-        if (woodMsg.contains("oak")) {
-            return 1521;
-        } else if (woodMsg.contains("willow")) {
-            return 1519;
-        } else if (woodMsg.contains("teak")) {
-            return 6333;
-        } else if (woodMsg.contains("maple")) {
-            return 1517;
-        } else if (woodMsg.contains("mahogany")) {
-            return 6332;
-        } else if (woodMsg.contains("arctic")) {
-            return 10810;
-        } else if (woodMsg.contains("yew")) {
-            return 1515;
-        } else if (woodMsg.contains("magic")) {
-            return 1513;
-        } else if (woodMsg.contains("redwood")) {
-            return 19669;
-        } else {
-            return 1511;
         }
     }
 
