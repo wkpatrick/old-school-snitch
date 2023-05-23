@@ -4,15 +4,14 @@ import com.google.inject.Provides;
 
 import javax.inject.Inject;
 
+import net.runelite.client.game.ItemStack;
+import xyz.wkrp.records.*;
+import lombok.extern.slf4j.Slf4j;
 
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.plugins.loottracker.LootReceived;
-import xyz.wkrp.records.ItemDrop;
-import xyz.wkrp.records.NameSignIn;
-import xyz.wkrp.records.NpcKill;
-import xyz.wkrp.records.XpDrop;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -60,6 +59,7 @@ public class OldSchoolSnitchPlugin extends Plugin {
     private Multiset<Integer> previousInventorySnapshot;
     private Integer containerChangedCount = 0;
     private Integer pendingInventoryUpdates = 0;
+    private WorldPoint currentLocation = null;
 
     private Multiset<Integer> getInventorySnapshot() {
         final ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
@@ -76,29 +76,41 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Override
     protected void startUp() throws Exception {
-        log.info("Old School Snitch started!");
+        log.debug("Old School Snitch started!");
     }
 
     @Subscribe
     public void onPlayerChanged(PlayerChanged playerChanged) {
         if (!NameSnatched && playerChanged.getPlayer().getId() == client.getLocalPlayer().getId()) {
-            log.info("Player id match! " + client.getLocalPlayer().getName());
             snitchClient.SignIn(new NameSignIn(client.getLocalPlayer().getName(), config.apiKey()));
         }
     }
 
     @Subscribe
-    public void onGameStateChanged(GameStateChanged event)
-    {
-        log.info("Game state changed!: " + event.getGameState());
-        if(event.getGameState() == GameState.LOGGED_IN){
+    public void onGameStateChanged(GameStateChanged event) {
+        if (event.getGameState() == GameState.LOGGED_IN) {
             previousInventorySnapshot = getInventorySnapshot();
         }
     }
 
     @Override
     protected void shutDown() throws Exception {
-        log.info("Old School Snitch stopped!");
+        log.debug("Old School Snitch stopped!");
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick tick) {
+        if (config.locationTrackingCheckbox()) {
+            var loc = client.getLocalPlayer().getWorldLocation();
+            int x = loc.getX();
+            int y = loc.getY();
+            int plane = loc.getPlane();
+
+            if (loc != null && currentLocation != null && (x != currentLocation.getX() || y != currentLocation.getY() || plane != currentLocation.getPlane())) {
+                snitchClient.sendLocation(new UserLocation(x, y, config.apiKey()));
+            }
+            currentLocation = loc;
+        }
     }
 
     @Subscribe
@@ -112,11 +124,10 @@ public class OldSchoolSnitchPlugin extends Plugin {
             previousInventorySnapshot = getInventorySnapshot();
             log.debug("Inventory count: " + previousInventorySnapshot.elementSet().size());
 
-        }
-        else if(containerChangedCount > 1 && container == client.getItemContainer(InventoryID.INVENTORY)){
+        } else if (containerChangedCount > 1 && container == client.getItemContainer(InventoryID.INVENTORY)) {
             log.debug("Inventory changed!");
             log.debug("Pending requested updates: " + pendingInventoryUpdates);
-            if(pendingInventoryUpdates > 0){
+            if (pendingInventoryUpdates > 0) {
                 Multiset<Integer> currentInventorySnapshot = getInventorySnapshot();
                 final Multiset<Integer> itemsReceived = Multisets.difference(currentInventorySnapshot, previousInventorySnapshot);
                 //final Multiset<Integer> itemsRemoved = Multisets.difference(previousInventorySnapshot, currentInventorySnapshot);
@@ -126,12 +137,14 @@ public class OldSchoolSnitchPlugin extends Plugin {
                     log.debug("Items delta: " + set.size());
                     for (var itemId : set) {
                         var count = itemsReceived.count(itemId);
-                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", ("Got " + count + " of " + itemId), null);
+                        if (config.debugMessagesCheckbox()) {
+                            client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", ("Got " + count + " of " + itemId), null);
+                        }
                         snitchClient.sendItem(new ItemDrop(itemId, count, config.apiKey()));
                     }
                 }
                 pendingInventoryUpdates--;
-            } else if(pendingInventoryUpdates == 0){
+            } else if (pendingInventoryUpdates == 0) {
                 //Still need to update the inventory snapshot on say dropping items, getting non-skilling ones, etc.
                 previousInventorySnapshot = getInventorySnapshot();
             } else {
@@ -148,16 +161,12 @@ public class OldSchoolSnitchPlugin extends Plugin {
         if (event.getType() != ChatMessageType.SPAM) {
             return;
         } else if (WOOD_CUT_PATTERN.matcher(message).matches()) {
-            //Got some wood
             pendingInventoryUpdates++;
-
         } else if (MINING_PATTERN.matcher(event.getMessage()).matches()) {
-            //Got some ore bb
             pendingInventoryUpdates++;
         } else if (message.contains("You catch a") || message.contains("You catch some") ||
                 message.equals("Your cormorant returns with its catch.")) {
             pendingInventoryUpdates++;
-
         }
     }
 
@@ -179,6 +188,10 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
                     snitchClient.sendXP(new XpDrop(skill.name(), delta, xp, config.apiKey()));
                 }
+
+                if(statChanged.getSkill() == Skill.RUNECRAFT){
+                    pendingInventoryUpdates++;
+                }
             }
         }
     }
@@ -191,6 +204,12 @@ public class OldSchoolSnitchPlugin extends Plugin {
                 client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", npc.getName() + " Killed", null);
             }
             snitchClient.sendKill(new NpcKill(npc.getId(), config.apiKey()));
+            for (ItemStack item : npcLootReceived.getItems()) {
+                if (config.debugMessagesCheckbox()) {
+                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
+                }
+                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), npc.getId(), config.apiKey()));
+            }
         }
     }
 

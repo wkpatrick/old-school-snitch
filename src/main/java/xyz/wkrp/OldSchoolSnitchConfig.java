@@ -11,6 +11,11 @@ public interface OldSchoolSnitchConfig extends Config {
         return "";
     }
 
+    @ConfigItem(keyName = "enableLocationTracking", name = "Enable Location Tracking", description = "Send your in-game location to Old School Snitch")
+    default boolean locationTrackingCheckbox() {
+        return false;
+    }
+
     @ConfigItem(keyName = "enableXpTracking", name = "Enable XP Tracking", description = "Send XP drops to Old School Snitch")
     default boolean xpTrackingCheckbox() {
         return false;

@@ -1,5 +1,16 @@
 package xyz.wkrp.records;
 
-public record XpDrop(String Skill, Integer Amount, Integer CurrentTotal, String PlayerId) {
+public class XpDrop {
+    private String skill;
+    private Integer amount;
+    private Integer currentTotal;
+    private String playerId;
+
+    public XpDrop(String skill, Integer amount, Integer currentTotal, String playerId) {
+        this.skill = skill;
+        this.amount = amount;
+        this.currentTotal = currentTotal;
+        this.playerId = playerId;
+    }
 }
 

@@ -3,10 +3,7 @@ package xyz.wkrp;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import xyz.wkrp.records.ItemDrop;
-import xyz.wkrp.records.NameSignIn;
-import xyz.wkrp.records.NpcKill;
-import xyz.wkrp.records.XpDrop;
+import xyz.wkrp.records.*;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -18,7 +15,7 @@ public class OldSchoolSnitchClient {
     private final OkHttpClient client;
     private final Gson gson;
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    private final String baseUrl = "http://localhost:4000";
+    private final String baseUrl = "https://oldschoolsnit.ch";
 
     @Inject
     private OldSchoolSnitchClient(OkHttpClient client) {
@@ -61,6 +58,15 @@ public class OldSchoolSnitchClient {
         RequestBody body = RequestBody.create(JSON, gson.toJson(itemDrop));
         Request request = new Request.Builder()
                 .url(baseUrl + "/api/item")
+                .post(body)
+                .build();
+        makeRequest(request);
+    }
+
+    public void sendLocation(UserLocation location) {
+        RequestBody body = RequestBody.create(JSON, gson.toJson(location));
+        Request request = new Request.Builder()
+                .url(baseUrl + "/api/location")
                 .post(body)
                 .build();
         makeRequest(request);
