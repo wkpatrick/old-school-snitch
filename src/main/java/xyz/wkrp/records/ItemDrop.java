@@ -1,10 +1,10 @@
 package xyz.wkrp.records;
 
 public class ItemDrop {
-    private int itemId;
-    private int amount;
+    private Integer itemId;
+    private Integer amount;
     private String playerId;
-    private int npcId;
+    private Integer npcId = null;
 
     public ItemDrop(int itemId, int amount, String playerId) {
         this.itemId = itemId;

@@ -5,6 +5,7 @@ import com.google.inject.Provides;
 import javax.inject.Inject;
 
 import net.runelite.client.game.ItemStack;
+import net.runelite.http.api.loottracker.LootRecordType;
 import xyz.wkrp.records.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -100,7 +101,7 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick tick) {
-        if (config.locationTrackingCheckbox()) {
+        if (config.locationTrackingCheckbox() && !client.isInInstancedRegion()) {
             var loc = client.getLocalPlayer().getWorldLocation();
             int x = loc.getX();
             int y = loc.getY();
@@ -115,7 +116,6 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
-
         // check to see that the container is the equipment or inventory
         ItemContainer container = event.getItemContainer();
 
@@ -162,11 +162,14 @@ public class OldSchoolSnitchPlugin extends Plugin {
             return;
         } else if (WOOD_CUT_PATTERN.matcher(message).matches()) {
             pendingInventoryUpdates++;
+            log.debug("Woodcutting increasing pending inv");
         } else if (MINING_PATTERN.matcher(event.getMessage()).matches()) {
             pendingInventoryUpdates++;
+            log.debug("Mining increasing pending inv");
         } else if (message.contains("You catch a") || message.contains("You catch some") ||
                 message.equals("Your cormorant returns with its catch.")) {
             pendingInventoryUpdates++;
+            log.debug("Fishing increasing pending inv");
         }
     }
 
@@ -187,10 +190,11 @@ public class OldSchoolSnitchPlugin extends Plugin {
                     }
 
                     snitchClient.sendXP(new XpDrop(skill.name(), delta, xp, config.apiKey()));
-                }
 
-                if(statChanged.getSkill() == Skill.RUNECRAFT){
-                    pendingInventoryUpdates++;
+                    if(statChanged.getSkill() == Skill.RUNECRAFT){
+                        pendingInventoryUpdates++;
+                        log.debug("Runecrafting increasing pending inv");
+                    }
                 }
             }
         }
@@ -215,7 +219,15 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Subscribe
     public void onLootReceived(final LootReceived lootReceived) {
-        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", lootReceived.getName() + " LOOT RCVD", null);
+        if(lootReceived.getType() != LootRecordType.NPC){
+            log.debug("Adding loot from non-npc Loot Recieved");
+            for (ItemStack item : lootReceived.getItems()) {
+                if (config.debugMessagesCheckbox()) {
+                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
+                }
+                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), config.apiKey()));
+            }
+        }
     }
 
     @Provides
