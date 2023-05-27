@@ -175,12 +175,11 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Subscribe
     public void onStatChanged(StatChanged statChanged) {
-        if (config.xpTrackingCheckbox()) {
-            final Skill skill = statChanged.getSkill();
-            final int xp = statChanged.getXp();
+        final Skill skill = statChanged.getSkill();
+        final int xp = statChanged.getXp();
 
-            Integer previous = previousSkillExpTable.put(skill, xp);
-
+        Integer previous = previousSkillExpTable.put(skill, xp);
+        if (!config.apiKey().isEmpty()) {
             //Since we get all the skills upon login/load/whenever, we dont have to worry about seeding the table.
             if (previous != null) {
                 int delta = xp - previous;
@@ -196,6 +195,9 @@ public class OldSchoolSnitchPlugin extends Plugin {
                         log.debug("Runecrafting increasing pending inv");
                     }
                 }
+            }
+            else{
+                snitchClient.sendXP(new XpDrop(skill.name(), 0, xp, config.apiKey()));
             }
         }
     }
