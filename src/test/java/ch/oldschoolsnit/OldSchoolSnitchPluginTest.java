@@ -1,4 +1,4 @@
-package xyz.wkrp;
+package ch.oldschoolsnit;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;

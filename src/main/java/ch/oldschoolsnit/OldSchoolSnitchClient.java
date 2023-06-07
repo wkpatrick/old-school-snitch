@@ -1,9 +1,10 @@
-package xyz.wkrp;
+package ch.oldschoolsnit;
 
+import ch.oldschoolsnit.records.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import xyz.wkrp.records.*;
+import net.runelite.api.Client;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -12,10 +13,15 @@ import java.io.IOException;
 
 @Slf4j
 public class OldSchoolSnitchClient {
+    @Inject
+    private OldSchoolSnitchConfig config;
+    @Inject
+    private Client gameClient;
     private final OkHttpClient client;
     private final Gson gson;
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    private final String baseUrl = "https://oldschoolsnit.ch";
+    //private final String baseUrl = "https://oldschoolsnit.ch";
+    private final String baseUrl = "http://localhost:4000";
 
     @Inject
     private OldSchoolSnitchClient(OkHttpClient client) {
@@ -76,7 +82,6 @@ public class OldSchoolSnitchClient {
         @Override
         public void onFailure(Call call, IOException e) {
             log.error("Error in OldSchoolSnitchClient", e);
-            throw new RuntimeException(e);
         }
 
         @Override

@@ -32,7 +32,7 @@ shadowJar {
 	}
 }
 
-group = 'com.example'
+group = 'ch.oldschoolsnit'
 version = '1.0-SNAPSHOT'
 sourceCompatibility = "11"
 

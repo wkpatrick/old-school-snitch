@@ -1,12 +1,7 @@
-package xyz.wkrp;
-
-import com.google.inject.Provides;
+package ch.oldschoolsnit;
 
 import javax.inject.Inject;
 
-import net.runelite.client.game.ItemStack;
-import net.runelite.http.api.loottracker.LootRecordType;
-import xyz.wkrp.records.*;
 import lombok.extern.slf4j.Slf4j;
 
 import net.runelite.api.*;
@@ -19,7 +14,10 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.game.ItemStack;
+import net.runelite.http.api.loottracker.LootRecordType;
 
+import com.google.inject.Provides;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
@@ -28,6 +26,8 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import ch.oldschoolsnit.records.*;
 
 @Slf4j
 @PluginDescriptor(
@@ -83,7 +83,7 @@ public class OldSchoolSnitchPlugin extends Plugin {
     @Subscribe
     public void onPlayerChanged(PlayerChanged playerChanged) {
         if (!NameSnatched && playerChanged.getPlayer().getId() == client.getLocalPlayer().getId()) {
-            snitchClient.SignIn(new NameSignIn(client.getLocalPlayer().getName(), config.apiKey()));
+            snitchClient.SignIn(new NameSignIn(client.getLocalPlayer().getName(), config.apiKey(), client.getAccountHash()));
         }
     }
 
@@ -102,13 +102,15 @@ public class OldSchoolSnitchPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick tick) {
         if (config.locationTrackingCheckbox() && !client.isInInstancedRegion()) {
+            Long accountHash = this.client.getAccountHash();
+            String apiKey = config.apiKey();
             var loc = client.getLocalPlayer().getWorldLocation();
             int x = loc.getX();
             int y = loc.getY();
             int plane = loc.getPlane();
 
             if (loc != null && currentLocation != null && (x != currentLocation.getX() || y != currentLocation.getY() || plane != currentLocation.getPlane())) {
-                snitchClient.sendLocation(new UserLocation(x, y, config.apiKey()));
+                snitchClient.sendLocation(new UserLocation(x, y, apiKey, accountHash));
             }
             currentLocation = loc;
         }
@@ -116,6 +118,8 @@ public class OldSchoolSnitchPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
+        Long accountHash = this.client.getAccountHash();
+        String apiKey = config.apiKey();
         // check to see that the container is the equipment or inventory
         ItemContainer container = event.getItemContainer();
 
@@ -140,7 +144,7 @@ public class OldSchoolSnitchPlugin extends Plugin {
                         if (config.debugMessagesCheckbox()) {
                             client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", ("Got " + count + " of " + itemId), null);
                         }
-                        snitchClient.sendItem(new ItemDrop(itemId, count, config.apiKey()));
+                        snitchClient.sendItem(new ItemDrop(itemId, count, apiKey, accountHash));
                     }
                 }
                 pendingInventoryUpdates--;
@@ -177,6 +181,8 @@ public class OldSchoolSnitchPlugin extends Plugin {
     public void onStatChanged(StatChanged statChanged) {
         final Skill skill = statChanged.getSkill();
         final int xp = statChanged.getXp();
+        Long accountHash = this.client.getAccountHash();
+        String apiKey = config.apiKey();
 
         Integer previous = previousSkillExpTable.put(skill, xp);
         if (!config.apiKey().isEmpty()) {
@@ -188,16 +194,15 @@ public class OldSchoolSnitchPlugin extends Plugin {
                         client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", delta + "XP acquired in " + skill.name(), null);
                     }
 
-                    snitchClient.sendXP(new XpDrop(skill.name(), delta, xp, config.apiKey()));
+                    snitchClient.sendXP(new XpDrop(skill.name(), delta, xp, apiKey, accountHash));
 
-                    if(statChanged.getSkill() == Skill.RUNECRAFT){
+                    if (statChanged.getSkill() == Skill.RUNECRAFT) {
                         pendingInventoryUpdates++;
                         log.debug("Runecrafting increasing pending inv");
                     }
                 }
-            }
-            else{
-                snitchClient.sendXP(new XpDrop(skill.name(), 0, xp, config.apiKey()));
+            } else {
+                snitchClient.sendXP(new XpDrop(skill.name(), 0, xp, apiKey, accountHash));
             }
         }
     }
@@ -205,29 +210,33 @@ public class OldSchoolSnitchPlugin extends Plugin {
     @Subscribe
     public void onNpcLootReceived(final NpcLootReceived npcLootReceived) {
         if (config.killTrackingCheckbox()) {
+            Long accountHash = this.client.getAccountHash();
+            String apiKey = config.apiKey();
             final NPC npc = npcLootReceived.getNpc();
             if (config.debugMessagesCheckbox()) {
                 client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", npc.getName() + " Killed", null);
             }
-            snitchClient.sendKill(new NpcKill(npc.getId(), config.apiKey()));
+            snitchClient.sendKill(new NpcKill(npc.getId(), apiKey, accountHash));
             for (ItemStack item : npcLootReceived.getItems()) {
                 if (config.debugMessagesCheckbox()) {
                     client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
                 }
-                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), npc.getId(), config.apiKey()));
+                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), npc.getId(), apiKey, accountHash));
             }
         }
     }
 
     @Subscribe
     public void onLootReceived(final LootReceived lootReceived) {
-        if(lootReceived.getType() != LootRecordType.NPC){
+        Long accountHash = this.client.getAccountHash();
+        String apiKey = config.apiKey();
+        if (lootReceived.getType() != LootRecordType.NPC) {
             log.debug("Adding loot from non-npc Loot Recieved");
             for (ItemStack item : lootReceived.getItems()) {
                 if (config.debugMessagesCheckbox()) {
                     client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
                 }
-                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), config.apiKey()));
+                snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), apiKey, accountHash));
             }
         }
     }
