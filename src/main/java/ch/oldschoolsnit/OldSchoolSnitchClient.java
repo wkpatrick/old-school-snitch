@@ -3,7 +3,6 @@ package ch.oldschoolsnit;
 import ch.oldschoolsnit.records.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import net.runelite.api.Client;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -24,10 +23,10 @@ public class OldSchoolSnitchClient
 	private final String baseUrl = "https://oldschoolsnit.ch";
 
 	@Inject
-	private OldSchoolSnitchClient(OkHttpClient client)
+	private OldSchoolSnitchClient(OkHttpClient client, Gson gson)
 	{
 		this.client = client;
-		this.gson = new GsonBuilder()
+		this.gson = gson.newBuilder()
 			.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
 	}
 
