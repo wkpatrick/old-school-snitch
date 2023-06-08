@@ -128,9 +128,27 @@ public class OldSchoolSnitchPlugin extends Plugin
 		}
 	}
 
+	private boolean isTempWorld()
+	{
+		var worldType = client.getWorldType();
+		return worldType.contains(WorldType.BETA_WORLD)
+			|| worldType.contains(WorldType.DEADMAN)
+			|| worldType.contains(WorldType.FRESH_START_WORLD)
+			|| worldType.contains(WorldType.LAST_MAN_STANDING)
+			|| worldType.contains(WorldType.NOSAVE_MODE)
+			|| worldType.contains(WorldType.PVP_ARENA)
+			|| worldType.contains(WorldType.QUEST_SPEEDRUNNING)
+			|| worldType.contains(WorldType.SEASONAL)
+			|| worldType.contains(WorldType.TOURNAMENT_WORLD);
+	}
+
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
+		if (isTempWorld())
+		{
+			return;
+		}
 		Long accountHash = this.client.getAccountHash();
 		String apiKey = config.apiKey();
 		// check to see that the container is the equipment or inventory
@@ -186,6 +204,10 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
+		if (isTempWorld())
+		{
+			return;
+		}
 		var message = event.getMessage();
 		if (event.getType() != ChatMessageType.SPAM)
 		{
@@ -212,6 +234,10 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onStatChanged(StatChanged statChanged)
 	{
+		if (isTempWorld())
+		{
+			return;
+		}
 		final Skill skill = statChanged.getSkill();
 		final int xp = statChanged.getXp();
 		Long accountHash = this.client.getAccountHash();
@@ -250,6 +276,10 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onNpcLootReceived(final NpcLootReceived npcLootReceived)
 	{
+		if (isTempWorld())
+		{
+			return;
+		}
 		if (config.killAndDropTrackingCheckbox())
 		{
 			Long accountHash = this.client.getAccountHash();
@@ -274,6 +304,10 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onLootReceived(final LootReceived lootReceived)
 	{
+		if (isTempWorld())
+		{
+			return;
+		}
 		if (config.killAndDropTrackingCheckbox())
 		{
 			Long accountHash = this.client.getAccountHash();
