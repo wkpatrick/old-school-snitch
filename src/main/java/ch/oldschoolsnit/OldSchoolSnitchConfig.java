@@ -19,8 +19,8 @@ public interface OldSchoolSnitchConfig extends Config
 		return false;
 	}
 
-	@ConfigItem(keyName = "enableKillTracking", name = "Enable Kill Tracking", description = "Send NPC Kills to Old School Snitch")
-	default boolean killTrackingCheckbox()
+	@ConfigItem(keyName = "enableKillAndDropTracking", name = "Enable Kill and Drop Tracking", description = "Send NPC Kills and Drops to Old School Snitch")
+	default boolean killAndDropTrackingCheckbox()
 	{
 		return false;
 	}

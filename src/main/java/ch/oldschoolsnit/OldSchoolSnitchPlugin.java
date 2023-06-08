@@ -250,7 +250,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onNpcLootReceived(final NpcLootReceived npcLootReceived)
 	{
-		if (config.killTrackingCheckbox())
+		if (config.killAndDropTrackingCheckbox())
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
@@ -274,20 +274,24 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onLootReceived(final LootReceived lootReceived)
 	{
-		Long accountHash = this.client.getAccountHash();
-		String apiKey = config.apiKey();
-		if (lootReceived.getType() != LootRecordType.NPC)
+		if (config.killAndDropTrackingCheckbox())
 		{
-			log.debug("Adding loot from non-npc Loot Recieved");
-			for (ItemStack item : lootReceived.getItems())
+			Long accountHash = this.client.getAccountHash();
+			String apiKey = config.apiKey();
+			if (lootReceived.getType() != LootRecordType.NPC)
 			{
-				if (config.debugMessagesCheckbox())
+				log.debug("Adding loot from non-npc Loot Recieved");
+				for (ItemStack item : lootReceived.getItems())
 				{
-					client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
+					if (config.debugMessagesCheckbox())
+					{
+						client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", item.getQuantity() + " of item " + item.getId(), null);
+					}
+					snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), apiKey, accountHash));
 				}
-				snitchClient.sendItem(new ItemDrop(item.getId(), item.getQuantity(), apiKey, accountHash));
 			}
 		}
+
 	}
 
 	@Provides
