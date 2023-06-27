@@ -34,5 +34,5 @@ tasks.withType(JavaCompile) {
 }
 
 tasks.withType(Jar) {
-    duplicatesStrategy = 'exclude'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
