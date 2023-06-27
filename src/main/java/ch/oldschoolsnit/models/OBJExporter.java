@@ -155,8 +155,8 @@ public class OBJExporter
 			prevMtlIndex = ci;
 		}
 
-		PrintWriter obj = new PrintWriter(folderPath + name + ".obj");
-		PrintWriter mtl = new PrintWriter(folderPath + name + ".mtl");
+		PrintWriter obj = new PrintWriter(Constants.objPath.toFile());
+		PrintWriter mtl = new PrintWriter(Constants.mtlPath.toFile());
 
 		obj.print(sbObj);
 		mtl.print(sbMtl);
