@@ -22,7 +22,7 @@ public class OldSchoolSnitchClient
 	private final OkHttpClient client;
 	private final Gson gson;
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	private final String baseUrl = "http://oldschoolsnit.ch";
+	private final String baseUrl = "https://oldschoolsnit.ch";
 
 
 	@Inject

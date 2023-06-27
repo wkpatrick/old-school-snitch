@@ -74,8 +74,6 @@ public class OldSchoolSnitchPlugin extends Plugin
 	private OldSchoolSnitchPanel oldSchoolSnitchPanel;
 	private NavigationButton navButton;
 	private final Map<Skill, Integer> previousSkillExpTable = new EnumMap<>(Skill.class);
-
-	private boolean NameSnatched = false;
 	private static final Pattern WOOD_CUT_PATTERN = Pattern.compile("You get (?:some|an)[\\w ]+(?:logs?|mushrooms)\\.");
 	private static final Pattern MINING_PATTERN = Pattern.compile(
 		"You " +
@@ -129,7 +127,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onPlayerChanged(PlayerChanged playerChanged)
 	{
-		if (!NameSnatched && playerChanged.getPlayer().getId() == client.getLocalPlayer().getId())
+		if (playerChanged.getPlayer().getId() == client.getLocalPlayer().getId())
 		{
 			var name = client.getLocalPlayer().getName();
 			var apiKey = config.apiKey();
@@ -150,6 +148,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 		else if (event.getGameState() == GameState.LOGIN_SCREEN)
 		{
 			previousSkillExpTable.clear();
+			pendingInventoryUpdates = 0;
 		}
 	}
 
@@ -160,10 +159,14 @@ public class OldSchoolSnitchPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 	}
 
+	private boolean doLocation(){
+		return !isTempWorld() && !config.apiKey().isBlank() && config.locationTrackingCheckbox();
+	}
+
 	@Subscribe
 	public void onGameTick(GameTick tick)
 	{
-		if (config.locationTrackingCheckbox() && !client.isInInstancedRegion())
+		if (doLocation())
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
@@ -194,10 +197,14 @@ public class OldSchoolSnitchPlugin extends Plugin
 			|| worldType.contains(WorldType.TOURNAMENT_WORLD);
 	}
 
+	private boolean doLoot(){
+		return !isTempWorld() && !config.apiKey().isBlank() && config.killAndDropTrackingCheckbox();
+	}
+
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
-		if (isTempWorld())
+		if (!doLoot())
 		{
 			return;
 		}
@@ -283,21 +290,20 @@ public class OldSchoolSnitchPlugin extends Plugin
 		}
 	}
 
+	private boolean doXp(){
+		return !isTempWorld() && !config.apiKey().isBlank();
+	}
 	@Subscribe
 	public void onStatChanged(StatChanged statChanged)
 	{
-		if (isTempWorld())
+		if (doXp())
 		{
-			return;
-		}
-		final Skill skill = statChanged.getSkill();
-		final int xp = statChanged.getXp();
-		Long accountHash = this.client.getAccountHash();
-		String apiKey = config.apiKey();
+			final Skill skill = statChanged.getSkill();
+			final int xp = statChanged.getXp();
+			Long accountHash = this.client.getAccountHash();
+			String apiKey = config.apiKey();
 
-		Integer previous = previousSkillExpTable.put(skill, xp);
-		if (!config.apiKey().isEmpty())
-		{
+			Integer previous = previousSkillExpTable.put(skill, xp);
 			//Since we get all the skills upon login/load/whenever, we dont have to worry about seeding the table.
 			if (previous != null)
 			{
@@ -328,11 +334,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onNpcLootReceived(final NpcLootReceived npcLootReceived)
 	{
-		if (isTempWorld())
-		{
-			return;
-		}
-		if (config.killAndDropTrackingCheckbox())
+		if (doLoot())
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
@@ -356,11 +358,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onLootReceived(final LootReceived lootReceived)
 	{
-		if (isTempWorld())
-		{
-			return;
-		}
-		if (config.killAndDropTrackingCheckbox())
+		if (doLoot())
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
