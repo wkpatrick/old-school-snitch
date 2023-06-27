@@ -18,13 +18,15 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
+    implementation group: 'de.javagl', name: 'jgltf-obj', version: '2.0.3'
+
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
 group = 'ch.oldschoolsnit'
-version = '1.0-SNAPSHOT'
+version = '1.0.1'
 sourceCompatibility = "11"
 
 tasks.withType(JavaCompile) {

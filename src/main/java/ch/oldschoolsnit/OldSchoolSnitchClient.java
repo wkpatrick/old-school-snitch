@@ -3,6 +3,8 @@ package ch.oldschoolsnit;
 import ch.oldschoolsnit.records.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
+import java.nio.file.Files;
 import net.runelite.api.Client;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -20,7 +22,8 @@ public class OldSchoolSnitchClient
 	private final OkHttpClient client;
 	private final Gson gson;
 	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-	private final String baseUrl = "https://oldschoolsnit.ch";
+	private final String baseUrl = "http://oldschoolsnit.ch";
+
 
 	@Inject
 	private OldSchoolSnitchClient(OkHttpClient client, Gson gson)
@@ -81,6 +84,29 @@ public class OldSchoolSnitchClient
 			.post(body)
 			.build();
 		makeRequest(request);
+	}
+
+	public void sendModel(long accountHash, String apiKey){
+		try
+		{
+			var normalModel = Files.readString(Constants.gltfPath);
+			var parser = new JsonParser();
+			var parsed = parser.parse(normalModel);
+			var minified = gson.toJson(parsed);
+
+			var mUpdate = new ModelUpdate(minified,accountHash, apiKey);
+			RequestBody body = RequestBody.create(JSON, gson.toJson(mUpdate));
+			Request request = new Request.Builder()
+				.url(baseUrl + "/api/model")
+				.post(body)
+				.build();
+			makeRequest(request);
+
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	private final Callback callback = new Callback()

@@ -1,5 +1,9 @@
 package ch.oldschoolsnit;
 
+import ch.oldschoolsnit.models.GLTFExporter;
+import ch.oldschoolsnit.models.ModelSnapshot;
+import java.awt.image.BufferedImage;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
 import lombok.extern.slf4j.Slf4j;
@@ -7,14 +11,19 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.NpcLootReceived;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.game.ItemStack;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
 import net.runelite.http.api.loottracker.LootRecordType;
 
 import com.google.inject.Provides;
@@ -35,8 +44,21 @@ import ch.oldschoolsnit.records.*;
 )
 public class OldSchoolSnitchPlugin extends Plugin
 {
+	private static OldSchoolSnitchPlugin instance;
+
+	public static Client getClient()
+	{
+		return instance.client;
+	}
+
 	@Inject
 	private Client client;
+
+	@Inject
+	private ClientThread clientThread;
+
+	@Inject
+	ScheduledExecutorService executor;
 
 	@Inject
 	private EventBus eventBus;
@@ -46,6 +68,11 @@ public class OldSchoolSnitchPlugin extends Plugin
 
 	@Inject
 	private OldSchoolSnitchConfig config;
+
+	@Inject
+	private ClientToolbar clientToolbar;
+	private OldSchoolSnitchPanel oldSchoolSnitchPanel;
+	private NavigationButton navButton;
 	private final Map<Skill, Integer> previousSkillExpTable = new EnumMap<>(Skill.class);
 
 	private boolean NameSnatched = false;
@@ -82,6 +109,21 @@ public class OldSchoolSnitchPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		log.debug("Old School Snitch started!");
+
+		oldSchoolSnitchPanel = injector.getInstance(OldSchoolSnitchPanel.class);
+
+		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
+
+		navButton = NavigationButton.builder()
+			.tooltip("Old School Snitch")
+			.icon(icon)
+			.priority(3)
+			.panel(oldSchoolSnitchPanel)
+			.build();
+
+		clientToolbar.addNavigation(navButton);
+
+		OldSchoolSnitchPlugin.instance = this;
 	}
 
 	@Subscribe
@@ -89,7 +131,11 @@ public class OldSchoolSnitchPlugin extends Plugin
 	{
 		if (!NameSnatched && playerChanged.getPlayer().getId() == client.getLocalPlayer().getId())
 		{
-			snitchClient.SignIn(new NameSignIn(client.getLocalPlayer().getName(), config.apiKey(), client.getAccountHash()));
+			var name = client.getLocalPlayer().getName();
+			var apiKey = config.apiKey();
+			var accountHash = client.getAccountHash();
+			var accountType = client.getVarbitValue(Varbits.ACCOUNT_TYPE);
+			snitchClient.SignIn(new NameSignIn(name, apiKey, accountHash, accountType));
 		}
 	}
 
@@ -100,12 +146,18 @@ public class OldSchoolSnitchPlugin extends Plugin
 		{
 			previousInventorySnapshot = getInventorySnapshot();
 		}
+
+		else if (event.getGameState() == GameState.LOGIN_SCREEN)
+		{
+			previousSkillExpTable.clear();
+		}
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		log.debug("Old School Snitch stopped!");
+		clientToolbar.removeNavigation(navButton);
 	}
 
 	@Subscribe
@@ -325,8 +377,28 @@ public class OldSchoolSnitchPlugin extends Plugin
 				}
 			}
 		}
+	}
+
+	@Subscribe
+	public void onModelSnapshot(final ModelSnapshot modelSnapshot)
+	{
+		clientThread.invokeLater(() -> {
+			var model = client.getLocalPlayer().getModel();
+			String apiKey = config.apiKey();
+
+			//Here we generate the OBJ on the client thread to make sure we don't get an incorrect player model.
+			//We then convert from obj -> gltf in the executor since that can be done off of thread. This ensures no frame drops.
+			GLTFExporter.exportObj(model);
+
+			executor.execute(() ->
+			{
+				GLTFExporter.convertGLTF();
+				snitchClient.sendModel(client.getAccountHash(), apiKey);
+			});
+		});
 
 	}
+
 
 	@Provides
 	OldSchoolSnitchConfig provideConfig(ConfigManager configManager)
