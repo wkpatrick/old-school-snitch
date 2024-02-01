@@ -1,10 +1,9 @@
 package ch.oldschoolsnit;
 
+import ch.oldschoolsnit.models.GLTF;
 import ch.oldschoolsnit.records.*;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
-import java.nio.file.Files;
 import net.runelite.api.Client;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -30,7 +29,8 @@ public class OldSchoolSnitchClient
 	{
 		this.client = client;
 		this.gson = gson.newBuilder()
-			.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+			.create();
 	}
 
 	public void SignIn(NameSignIn name)
@@ -86,27 +86,16 @@ public class OldSchoolSnitchClient
 		makeRequest(request);
 	}
 
-	public void sendModel(long accountHash, String apiKey){
-		try
-		{
-			var normalModel = Files.readString(Constants.gltfPath);
-			var parser = new JsonParser();
-			var parsed = parser.parse(normalModel);
-			var minified = gson.toJson(parsed);
-
-			var mUpdate = new ModelUpdate(minified,accountHash, apiKey);
-			RequestBody body = RequestBody.create(JSON, gson.toJson(mUpdate));
-			Request request = new Request.Builder()
-				.url(baseUrl + "/api/model")
-				.post(body)
-				.build();
-			makeRequest(request);
-
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
+	public void sendModel(GLTF model, long accountHash, String apiKey)
+	{
+		String gltfJson = model.ToJson(gson);
+		var mUpdate = new ModelUpdate(gltfJson, accountHash, apiKey);
+		RequestBody body = RequestBody.create(JSON, gson.toJson(mUpdate));
+		Request request = new Request.Builder()
+			.url(baseUrl + "/api/model")
+			.post(body)
+			.build();
+		makeRequest(request);
 	}
 
 	private final Callback callback = new Callback()

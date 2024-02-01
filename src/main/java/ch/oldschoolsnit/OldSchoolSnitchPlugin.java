@@ -1,6 +1,6 @@
 package ch.oldschoolsnit;
 
-import ch.oldschoolsnit.models.GLTFExporter;
+import ch.oldschoolsnit.models.GLTF;
 import ch.oldschoolsnit.models.ModelSnapshot;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.ScheduledExecutorService;
@@ -364,7 +364,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 			String apiKey = config.apiKey();
 			if (lootReceived.getType() != LootRecordType.NPC)
 			{
-				log.debug("Adding loot from non-npc Loot Recieved");
+				log.debug("Adding loot from non-npc Loot Received");
 				for (ItemStack item : lootReceived.getItems())
 				{
 					if (config.debugMessagesCheckbox())
@@ -383,18 +383,9 @@ public class OldSchoolSnitchPlugin extends Plugin
 		clientThread.invokeLater(() -> {
 			var model = client.getLocalPlayer().getModel();
 			String apiKey = config.apiKey();
-
-			//Here we generate the OBJ on the client thread to make sure we don't get an incorrect player model.
-			//We then convert from obj -> gltf in the executor since that can be done off of thread. This ensures no frame drops.
-			GLTFExporter.exportObj(model);
-
-			executor.execute(() ->
-			{
-				GLTFExporter.convertGLTF();
-				snitchClient.sendModel(client.getAccountHash(), apiKey);
-			});
+			var gltf = new GLTF(model);
+			snitchClient.sendModel(gltf, client.getAccountHash(), apiKey);
 		});
-
 	}
 
 
