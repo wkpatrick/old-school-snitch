@@ -3,7 +3,9 @@ package ch.oldschoolsnit;
 import ch.oldschoolsnit.models.ModelSnapshot;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
+import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 import javax.swing.Box;
@@ -25,6 +27,8 @@ public class OldSchoolSnitchPanel extends PluginPanel
 
 	private final EventBus eventBus;
 
+	private final String websiteUrl = "https://oldschoolsnit.ch/";
+
 	@Inject
 	public OldSchoolSnitchPanel(ScheduledExecutorService executor, EventBus eventBus)
 	{
@@ -42,11 +46,11 @@ public class OldSchoolSnitchPanel extends PluginPanel
 		headerPanel.setLayout(new BorderLayout());
 		headerPanel.setBackground(ColorScheme.BRAND_ORANGE);
 
-		JLabel testLabel = new JLabel("Old School Snitch");
-		testLabel.setFont(FontManager.getRunescapeBoldFont());
-		testLabel.setForeground(Color.BLACK);
-		testLabel.setHorizontalAlignment(JLabel.CENTER);
-		headerPanel.add(testLabel, BorderLayout.NORTH);
+		JLabel headerLabel = new JLabel("Old School Snitch");
+		headerLabel.setFont(FontManager.getRunescapeBoldFont());
+		headerLabel.setForeground(Color.BLACK);
+		headerLabel.setHorizontalAlignment(JLabel.CENTER);
+		headerPanel.add(headerLabel, BorderLayout.NORTH);
 
 		basePanel.add(headerPanel);
 		basePanel.add(Box.createRigidArea(new Dimension(0, 15)));
@@ -55,11 +59,10 @@ public class OldSchoolSnitchPanel extends PluginPanel
 		modelPanel.setLayout(new BorderLayout());
 		JLabel modelPanelHeader = new JLabel("Player Model Integration");
 		modelPanelHeader.setFont(FontManager.getRunescapeBoldFont());
-		//modelPanelHeader.setForeground(Color.BLACK);
 		modelPanelHeader.setHorizontalAlignment(JLabel.CENTER);
 		modelPanel.add(modelPanelHeader, BorderLayout.NORTH);
 		var getPlayerModel = new JButton("Send Player Model");
-		getPlayerModel.addActionListener( a ->
+		getPlayerModel.addActionListener(a ->
 		{
 			eventBus.post(new ModelSnapshot());
 		});
@@ -67,6 +70,31 @@ public class OldSchoolSnitchPanel extends PluginPanel
 		modelPanel.add(getPlayerModel, BorderLayout.CENTER);
 
 		basePanel.add(modelPanel);
+		basePanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
+		var websitePanel = new JPanel();
+		websitePanel.setLayout(new BorderLayout());
+		JLabel websitePanelHeader = new JLabel("About");
+		websitePanelHeader.setFont(FontManager.getRunescapeBoldFont());
+		websitePanelHeader.setHorizontalAlignment(JLabel.CENTER);
+		websitePanel.add(websitePanelHeader, BorderLayout.NORTH);
+
+		var openWebsite = new JButton("Open Website");
+		openWebsite.addActionListener(a -> {
+			try
+			{
+				Desktop desktop = java.awt.Desktop.getDesktop();
+				URI homepage = new URI(websiteUrl);
+				desktop.browse(homepage);
+			}
+			catch (Exception ex)
+			{
+				log.error("Error attempting to open the Old School Snitch Website", ex);
+			}
+		});
+		websitePanel.add(openWebsite, BorderLayout.CENTER);
+
+		basePanel.add(websitePanel);
 		basePanel.add(Box.createRigidArea(new Dimension(0, 15)));
 
 		setLayout(new BorderLayout());

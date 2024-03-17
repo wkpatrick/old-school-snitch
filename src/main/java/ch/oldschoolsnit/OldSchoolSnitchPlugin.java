@@ -3,6 +3,7 @@ package ch.oldschoolsnit;
 import ch.oldschoolsnit.models.GLTF;
 import ch.oldschoolsnit.models.ModelSnapshot;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
@@ -80,13 +81,14 @@ public class OldSchoolSnitchPlugin extends Plugin
 			"(?:manage to|just)" +
 			" (?:mined?|quarry) " +
 			"(?:some|an?) " +
-			"(?:copper|tin|clay|iron|silver|coal|gold|mithril|adamantite|runeite|amethyst|sandstone|granite|barronite shards|barronite deposit|Opal|piece of Jade|Red Topaz|Emerald|Sapphire|Ruby|Diamond)" +
+			"(?:copper|tin|clay|iron|silver|coal|gold|mithril|adamantite|runite|amethyst|sandstone|granite|barronite shards|barronite deposit|Opal|piece of Jade|Red Topaz|Emerald|Sapphire|Ruby|Diamond)" +
 			"(?:\\.|!)");
 
 	private Multiset<Integer> previousInventorySnapshot;
 	private Integer containerChangedCount = 0;
 	private Integer pendingInventoryUpdates = 0;
 	private WorldPoint currentLocation = null;
+	private String playerName = "";
 
 	private Multiset<Integer> getInventorySnapshot()
 	{
@@ -127,13 +129,19 @@ public class OldSchoolSnitchPlugin extends Plugin
 	@Subscribe
 	public void onPlayerChanged(PlayerChanged playerChanged)
 	{
-		if (playerChanged.getPlayer().getId() == client.getLocalPlayer().getId())
+		if (playerChanged.getPlayer().getId() == client.getLocalPlayer().getId() && !config.apiKey().isBlank())
 		{
 			var name = client.getLocalPlayer().getName();
-			var apiKey = config.apiKey();
-			var accountHash = client.getAccountHash();
-			var accountType = client.getVarbitValue(Varbits.ACCOUNT_TYPE);
-			snitchClient.SignIn(new NameSignIn(name, apiKey, accountHash, accountType));
+			if(!Objects.equals(name, playerName)){
+				var apiKey = config.apiKey();
+				var accountHash = client.getAccountHash();
+				var accountType = client.getVarbitValue(Varbits.ACCOUNT_TYPE);
+				snitchClient.SignIn(new NameSignIn(name, apiKey, accountHash, accountType));
+				playerName = name;
+			}
+			else{
+				log.debug("Skipping name update");
+			}
 		}
 	}
 

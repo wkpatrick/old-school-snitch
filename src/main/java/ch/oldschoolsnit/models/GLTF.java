@@ -9,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
 import net.runelite.api.Model;
 
 public class GLTF
