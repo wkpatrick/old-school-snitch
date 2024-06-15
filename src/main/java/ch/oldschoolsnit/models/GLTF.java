@@ -220,11 +220,11 @@ public class GLTF
 		scenes.add(scene);
 	}
 
-	public Float[] AddVert(int vertIndex, int[] vertsX, int[] vertsY, int[] vertsZ, ByteBuffer vertexBuffer)
+	public Float[] AddVert(int vertIndex, float[] vertsX, float[] vertsY, float[] vertsZ, ByteBuffer vertexBuffer)
 	{
-		float x = (float) vertsX[vertIndex];
-		float y = (float) -vertsY[vertIndex];
-		float z = (float) -vertsZ[vertIndex];
+		float x = vertsX[vertIndex];
+		float y = -vertsY[vertIndex];
+		float z = -vertsZ[vertIndex];
 
 		vertexBuffer.putFloat(x);
 		vertexBuffer.putFloat(y);
