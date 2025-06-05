@@ -13,11 +13,11 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.events.ServerNpcLoot;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.NpcLootReceived;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -89,6 +89,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	private Integer pendingInventoryUpdates = 0;
 	private WorldPoint currentLocation = null;
 	private String playerName = "";
+	private BlastMineTrackingHelper blastMineTrackingHelper = new BlastMineTrackingHelper();
 
 	private Multiset<Integer> getInventorySnapshot()
 	{
@@ -298,9 +299,11 @@ public class OldSchoolSnitchPlugin extends Plugin
 		}
 	}
 
-	private boolean doXp(){
+	private boolean doXp()
+	{
 		return !isTempWorld() && !config.apiKey().isBlank();
 	}
+
 	@Subscribe
 	public void onStatChanged(StatChanged statChanged)
 	{
@@ -340,19 +343,19 @@ public class OldSchoolSnitchPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onNpcLootReceived(final NpcLootReceived npcLootReceived)
+	public void onServerNpcLoot(final ServerNpcLoot serverNpcLoot)
 	{
 		if (doLoot())
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
-			final NPC npc = npcLootReceived.getNpc();
+			final NPCComposition npc = serverNpcLoot.getComposition();
 			if (config.debugMessagesCheckbox())
 			{
 				client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", npc.getName() + " Killed", null);
 			}
 			snitchClient.sendKill(new NpcKill(npc.getId(), apiKey, accountHash));
-			for (ItemStack item : npcLootReceived.getItems())
+			for (ItemStack item : serverNpcLoot.getItems())
 			{
 				if (config.debugMessagesCheckbox())
 				{
@@ -394,6 +397,19 @@ public class OldSchoolSnitchPlugin extends Plugin
 			var gltf = new GLTF(model);
 			snitchClient.sendModel(gltf, client.getAccountHash(), apiKey);
 		});
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged varbitChanged)
+	{
+		var result = this.blastMineTrackingHelper.varbitChangedHandler(varbitChanged);
+		if (result.ItemQuantity > 0)
+		{
+			log.debug("Item Id: {}, Item Quantity: {}", result.ItemId, result.ItemQuantity);
+			Long accountHash = this.client.getAccountHash();
+			String apiKey = config.apiKey();
+			snitchClient.sendItem(new ItemDrop(result.ItemId, result.ItemQuantity, apiKey, accountHash));
+		}
 	}
 
 
