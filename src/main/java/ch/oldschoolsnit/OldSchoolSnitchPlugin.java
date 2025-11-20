@@ -10,7 +10,6 @@ import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 
 import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.events.ServerNpcLoot;
@@ -87,7 +86,7 @@ public class OldSchoolSnitchPlugin extends Plugin
 	private Multiset<Integer> previousInventorySnapshot;
 	private Integer containerChangedCount = 0;
 	private Integer pendingInventoryUpdates = 0;
-	private WorldPoint currentLocation = null;
+	private BasicLocation currentLocation = null;
 	private String playerName = "";
 	private BlastMineTrackingHelper blastMineTrackingHelper = new BlastMineTrackingHelper();
 
@@ -179,14 +178,11 @@ public class OldSchoolSnitchPlugin extends Plugin
 		{
 			Long accountHash = this.client.getAccountHash();
 			String apiKey = config.apiKey();
-			var loc = client.getLocalPlayer().getWorldLocation();
-			int x = loc.getX();
-			int y = loc.getY();
-			int plane = loc.getPlane();
+			var loc = LocationUtil.getLocation(client);
 
-			if (loc != null && currentLocation != null && (x != currentLocation.getX() || y != currentLocation.getY() || plane != currentLocation.getPlane()))
+			if (loc != null && currentLocation != null && (loc.x != currentLocation.x || loc.y != currentLocation.y || loc.plane != currentLocation.plane))
 			{
-				snitchClient.sendLocation(new UserLocation(x, y, apiKey, accountHash));
+				snitchClient.sendLocation(new UserLocation(loc.x, loc.y, apiKey, accountHash));
 			}
 			currentLocation = loc;
 		}
