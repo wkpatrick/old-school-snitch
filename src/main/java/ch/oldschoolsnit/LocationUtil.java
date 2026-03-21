@@ -3,6 +3,7 @@ package ch.oldschoolsnit;
 import ch.oldschoolsnit.records.BasicLocation;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.WorldView;
 
 public class LocationUtil
 {
@@ -15,7 +16,7 @@ public class LocationUtil
 		}
 
 		var worldViewId = wv.getId();
-		var isOnBoat = worldViewId != -1;
+		var isOnBoat = worldViewId != WorldView.TOPLEVEL;
 		int plane = loc.getPlane();
 
 		if(isOnBoat){
